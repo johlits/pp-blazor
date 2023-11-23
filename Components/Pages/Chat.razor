@@ -1,0 +1,85 @@
+﻿@page "/chat"
+@rendermode InteractiveServer
+@using System.ComponentModel
+@using pp_blazor.ScopedService
+@inject ChatService ChatService
+
+<PageTitle>Chat</PageTitle>
+
+<p>@id</p>
+
+@if (loggedIn)
+{
+    @foreach (var chat in chats)
+    {
+        <span>@chat</span>
+        <br />
+    }
+}
+else
+{
+    <form method="post" @onsubmit="Submit" @formname="login-plain-form">
+        <AntiforgeryToken />
+        User: 
+        <InputText @bind-Value="Model!.User" />
+        Event: 
+        <InputText @bind-Value="Model!.Event" />
+        <button type="submit">Submit</button>
+    </form>
+}
+
+@code {
+    private int id = 0;
+    private List<string> chats = new List<string>();
+    private bool loggedIn = false;
+
+    protected override void OnInitialized()
+    {
+        if (ChatService.UserName != null && ChatService.EventTitle != null)
+        {
+            loggedIn = true;
+            id = ChatService.PingId;
+            chats = ChatService.Chat;
+        }
+        ChatService.PropertyChanged += UpdatePage;
+        Model ??= new();
+    }
+
+    [SupplyParameterFromForm]
+    public Login? Model { get; set; }
+
+    private void Submit()
+    {
+        ChatService.UserName = Model?.User;
+        ChatService.EventTitle = Model?.Event;
+        loggedIn = true;
+    }
+
+    public class Login 
+    {
+        public string? User { get; set; }
+        public string? Event { get; set; }
+    }
+
+    private async void UpdatePage(object sender, PropertyChangedEventArgs e)
+    {
+        try
+        {
+            if (e.PropertyName == nameof(ChatService.PingId))
+            {
+                id = ChatService.PingId;
+                await InvokeAsync(StateHasChanged);
+            }
+            if (e.PropertyName == nameof(ChatService.Chat))
+            {
+                chats = ChatService.Chat;
+                await InvokeAsync(StateHasChanged);
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Exception: {ex.Message}");
+        }
+    }
+}
+
