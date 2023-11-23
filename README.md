@@ -1,2 +1,2 @@
 # pp-blazor
-Client for chat engine (in development).
+1. Compile and add reference to [chat engine](https://github.com/johlits/pp). 
