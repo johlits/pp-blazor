@@ -6,8 +6,6 @@
 
 <PageTitle>Chat</PageTitle>
 
-<p>@id</p>
-
 @if (loggedIn)
 {
     @foreach (var chat in chats)
@@ -15,6 +13,12 @@
         <span>@chat</span>
         <br />
     }
+    <form method="post" @onsubmit="PostMessage" @formname="post-plain-form">
+        <AntiforgeryToken />
+        Comment:
+        <InputText @bind-Value="PostModel!.Message" />
+        <button type="submit">Post</button>
+    </form>
 }
 else
 {
@@ -29,7 +33,7 @@ else
 }
 
 @code {
-    private int id = 0;
+    private int pingId = 0;
     private List<string> chats = new List<string>();
     private bool loggedIn = false;
 
@@ -38,15 +42,19 @@ else
         if (ChatService.UserName != null && ChatService.EventTitle != null)
         {
             loggedIn = true;
-            id = ChatService.PingId;
+            pingId = ChatService.PingId;
             chats = ChatService.Chat;
         }
         ChatService.PropertyChanged += UpdatePage;
         Model ??= new();
+        PostModel ??= new();
     }
 
     [SupplyParameterFromForm]
     public Login? Model { get; set; }
+
+    [SupplyParameterFromForm]
+    public Post? PostModel { get; set; }
 
     private void Submit()
     {
@@ -55,10 +63,21 @@ else
         loggedIn = true;
     }
 
+    private void PostMessage()
+    {
+        ChatService.PostMessage(PostModel?.Message);
+        PostModel.Message = "";
+    }
+
     public class Login 
     {
         public string? User { get; set; }
         public string? Event { get; set; }
+    }
+
+    public class Post 
+    {
+        public string? Message { get; set; }
     }
 
     private async void UpdatePage(object sender, PropertyChangedEventArgs e)
@@ -67,7 +86,7 @@ else
         {
             if (e.PropertyName == nameof(ChatService.PingId))
             {
-                id = ChatService.PingId;
+                pingId = ChatService.PingId;
                 await InvokeAsync(StateHasChanged);
             }
             if (e.PropertyName == nameof(ChatService.Chat))

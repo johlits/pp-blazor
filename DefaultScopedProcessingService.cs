@@ -30,6 +30,10 @@ public sealed class DefaultScopedProcessingService : IScopedProcessingService
                 Task t = pp.Start();
                 while (!t.IsCompleted)
                 {
+                    while (_chatService.messages.Count > 0)
+                    {
+                        pp.GetUI().SendMessage(_chatService.messages.Dequeue());
+                    }
                     _chatService.Chat = chats;
                     _chatService.PingId++;
                     await Task.Delay(1000, stoppingToken);

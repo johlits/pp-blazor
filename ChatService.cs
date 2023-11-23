@@ -9,12 +9,18 @@ public class ChatService
     private string eventTitle = null;
     private List<string> chat = new List<string>();
     private int pingId = 0;
+    public Queue<string> messages = new Queue<string>();
 
     public event PropertyChangedEventHandler PropertyChanged;
 
     protected virtual void OnPropertyChanged([CallerMemberName] string propertyName = null)
     {
         PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
+    }
+
+    public void PostMessage(string message)
+    {
+        messages.Enqueue(message);
     }
 
     public string UserName
