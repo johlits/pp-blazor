@@ -7,6 +7,7 @@ public class ChatService
 {
     private string userName = null;
     private string eventTitle = null;
+    private bool init;
     private List<string> chat = new List<string>();
     private int pingId = 0;
     public Queue<string> messages = new Queue<string>();
@@ -21,6 +22,16 @@ public class ChatService
     public void PostMessage(string message)
     {
         messages.Enqueue(message);
+    }
+
+    public bool Init 
+    {
+        get => init;
+        set
+        {
+            init = value;
+            OnPropertyChanged();
+        }
     }
 
     public string UserName

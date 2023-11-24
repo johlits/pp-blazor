@@ -23,15 +23,7 @@
 }
 else
 {
-    <h2>Login</h2>
-    <form method="post" @onsubmit="Submit" @formname="login-plain-form"style="margin-bottom: 5px;">
-        <AntiforgeryToken />
-        User:
-        <InputText @ref=inputTextUser @bind-Value="Model!.User" @onkeydown="HandleKeyDownUser" />
-        Event:
-        <InputText @ref=inputTextEvent @bind-Value="Model!.Event" @onkeydown="HandleKeyDownEvent" />
-        <button type="submit">Submit</button>
-    </form>
+    <Login/>
 }
 
 @code {
@@ -40,15 +32,13 @@ else
     private int chatsCnt = 0;
     private bool loggedIn = false;
 
-    private InputText inputTextUser;
     private InputText inputTextChat;
-    private InputText inputTextEvent;
 
     protected override void OnInitialized()
     {
         if (ChatService.UserName != null && ChatService.EventTitle != null)
         {
-            loggedIn = true;
+            loggedIn = ChatService.Init;
             pingId = ChatService.PingId;
             chats = ChatService.Chat;
         }
@@ -59,18 +49,21 @@ else
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
-        if (firstRender)
+        if (loggedIn)
         {
-            if (inputTextUser?.Element != null)
+            if (firstRender)
             {
-                await inputTextUser.Element.Value.FocusAsync();
+                if (inputTextChat?.Element != null)
+                {
+                    await inputTextChat.Element.Value.FocusAsync();
+                }
             }
-        }
-        else
-        {
-            if (inputTextChat?.Element != null)
+            else
             {
-                await inputTextChat.Element.Value.FocusAsync();
+                if (inputTextChat?.Element != null)
+                {
+                    await inputTextChat.Element.Value.FocusAsync();
+                }
             }
         }
     }
@@ -81,41 +74,12 @@ else
     [SupplyParameterFromForm]
     public Post? PostModel { get; set; }
 
-    private void Submit()
-    {
-        if (!string.IsNullOrEmpty(Model?.User) && !string.IsNullOrEmpty(Model?.Event))
-        {
-            ChatService.UserName = Model?.User;
-            ChatService.EventTitle = Model?.Event;
-            loggedIn = true;
-        }
-    }
-
     private async Task PostMessage()
     {
         if (PostModel?.Message != null)
         {
             ChatService.PostMessage(PostModel?.Message);
             PostModel.Message = "";
-        }
-    }
-
-    private async Task HandleKeyDownUser(KeyboardEventArgs e)
-    {
-        if (e.Key == "Enter" && !e.CtrlKey && !e.AltKey && !e.ShiftKey)
-        {
-            await inputTextEvent.Element.Value.FocusAsync();
-        }
-    }
-
-    private async Task HandleKeyDownEvent(KeyboardEventArgs e)
-    {
-        if (e.Key == "Enter" && !e.CtrlKey && !e.AltKey && !e.ShiftKey)
-        {
-            if (!string.IsNullOrEmpty(Model?.User))
-            {
-                Submit();
-            }
         }
     }
 
@@ -128,12 +92,6 @@ else
                 PostMessage();
             }
         }
-    }
-
-    public class Login 
-    {
-        public string? User { get; set; }
-        public string? Event { get; set; }
     }
 
     public class Post 
@@ -152,6 +110,11 @@ else
     {
         try
         {
+            if (e.PropertyName == nameof(ChatService.Init))
+            {
+                loggedIn = ChatService.Init;
+                await InvokeAsync(StateHasChanged);
+            }
             if (e.PropertyName == nameof(ChatService.PingId))
             {
                 pingId = ChatService.PingId;

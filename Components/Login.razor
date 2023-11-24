@@ -1,0 +1,74 @@
+﻿@rendermode InteractiveServer
+@using System.ComponentModel
+@using pp_blazor.ScopedService
+@inject ChatService ChatService
+
+<h2>Login</h2>
+<form method="post" @onsubmit="Submit" @formname="login-plain-form" style="margin-bottom: 5px;">
+    <AntiforgeryToken />
+    User:
+    <InputText @ref=inputTextUser @bind-Value="Model!.User" @onkeydown="HandleKeyDownUser" />
+    Event:
+    <InputText @ref=inputTextEvent @bind-Value="Model!.Event" @onkeydown="HandleKeyDownEvent" />
+    <button type="submit">Submit</button>
+</form>
+
+@code {
+    private InputText inputTextUser;
+    private InputText inputTextEvent;
+
+    protected override void OnInitialized()
+    {
+        Model ??= new();
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            if (inputTextUser?.Element != null)
+            {
+                await inputTextUser.Element.Value.FocusAsync();
+            }
+        }
+    }
+
+    [SupplyParameterFromForm]
+    public LoginModel? Model { get; set; }
+
+    private void Submit()
+    {
+        if (!string.IsNullOrEmpty(Model?.User) && !string.IsNullOrEmpty(Model?.Event))
+        {
+            ChatService.UserName = Model?.User;
+            ChatService.EventTitle = Model?.Event;
+            ChatService.Init = true;
+        }
+    }
+
+    private async Task HandleKeyDownUser(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter" && !e.CtrlKey && !e.AltKey && !e.ShiftKey)
+        {
+            await inputTextEvent.Element.Value.FocusAsync();
+        }
+    }
+
+    private async Task HandleKeyDownEvent(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter" && !e.CtrlKey && !e.AltKey && !e.ShiftKey)
+        {
+            if (!string.IsNullOrEmpty(Model?.User))
+            {
+                Submit();
+            }
+        }
+    }
+
+    public class LoginModel
+    {
+        public string? User { get; set; }
+        public string? Event { get; set; }
+    }
+}
+

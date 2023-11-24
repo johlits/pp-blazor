@@ -1,8 +1,46 @@
 ﻿@page "/"
+@rendermode InteractiveServer
+@using System.ComponentModel
+@using pp_blazor.ScopedService
+@inject ChatService ChatService
 
-<PageTitle>PalPlanner</PageTitle>
+<PageTitle>Home</PageTitle>
 
-<h1>Services</h1>
+@if (!loggedIn)
+{
+    <Login />
+}
+
+@code {
+    private bool loggedIn = false;
+
+    protected override void OnInitialized()
+    {
+        if (ChatService.UserName != null && ChatService.EventTitle != null)
+        {
+            loggedIn = ChatService.Init;
+        }
+        ChatService.PropertyChanged += UpdatePage;
+    }
+
+    private async void UpdatePage(object sender, PropertyChangedEventArgs e)
+    {
+        try
+        {
+            if (e.PropertyName == nameof(ChatService.Init))
+            {
+                loggedIn = ChatService.Init;
+                await InvokeAsync(StateHasChanged);
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Exception: {ex.Message}");
+        }
+    }
+}
+
+<h2>Services</h2>
 
 <NavLink class="nav-link" href="chat">
     <span class="bi bi-plus-square-fill-nav-menu" aria-hidden="true"></span> Chat
