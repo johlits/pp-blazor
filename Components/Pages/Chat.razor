@@ -3,6 +3,7 @@
 @using System.ComponentModel
 @using pp_blazor.ScopedService
 @inject ChatService ChatService
+@inject IJSRuntime JS
 
 <PageTitle>Chat</PageTitle>
 
@@ -35,6 +36,7 @@ else
 @code {
     private int pingId = 0;
     private List<string> chats = new List<string>();
+    private int chatsCnt = 0;
     private bool loggedIn = false;
 
     protected override void OnInitialized()
@@ -80,6 +82,13 @@ else
         public string? Message { get; set; }
     }
 
+    private ElementReference scrollContainer;
+
+    private void ScrollToBottom()
+    {
+        JS.InvokeVoidAsync("scrollToBottom", scrollContainer);
+    }
+
     private async void UpdatePage(object sender, PropertyChangedEventArgs e)
     {
         try
@@ -93,6 +102,11 @@ else
             {
                 chats = ChatService.Chat;
                 await InvokeAsync(StateHasChanged);
+                if (chats.Count != chatsCnt)
+                {
+                    chatsCnt = chats.Count;
+                    ScrollToBottom();
+                }
             }
         }
         catch (Exception ex)
