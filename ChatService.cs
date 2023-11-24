@@ -8,7 +8,7 @@ public class ChatService
     private string userName = null;
     private string eventTitle = null;
     private bool init;
-    private List<Tuple<string, int>> chat = new List<Tuple<string, int>>();
+    private List<Tuple<string, string, int>> chat = new List<Tuple<string, string, int>>();
     private int pingId = 0;
     public Queue<string> messages = new Queue<string>();
 
@@ -54,7 +54,7 @@ public class ChatService
         }
     }
 
-    public List<Tuple<string, int>> Chat
+    public List<Tuple<string, string, int>> Chat
     {
         get => chat;
         set

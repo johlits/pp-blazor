@@ -1,8 +1,116 @@
 ﻿@page "/game"
+@rendermode InteractiveServer
+@using System.ComponentModel
+@using pp_blazor.ScopedService
+@inject ChatService ChatService
 
 <PageTitle>Game</PageTitle>
 
-<span>Todo</span>
+@if (loggedIn)
+{
+    <h2>Game</h2>
+    <button @onclick="HandleCardsClick">Cards</button>
+    <button @onclick="HandleHandClick">Hand</button>
+    @if (gameOn) {
+        <br />
+        @foreach (var line in output)
+        {
+            <span>@line</span>
+            <br />
+        }
+    }
+}
+else
+{
+    <Login />
+}
 
 @code {
+    private int pingId = 0;
+    private List<Tuple<string, string, int>> chats = new List<Tuple<string, string, int>>();
+    private List<string> output = new List<string>();
+    private int chatIndex = 0;
+    private int chatsCnt = 0;
+    private bool loggedIn = false;
+    private bool gameOn = false;
+
+    protected override void OnInitialized()
+    {
+        if (ChatService.UserName != null && ChatService.EventTitle != null)
+        {
+            SetVariables();
+        }
+        ChatService.PropertyChanged += UpdatePage;
+    }
+
+    public void SetVariables()
+    {
+        loggedIn = ChatService.Init;
+        pingId = ChatService.PingId;
+        chats = ChatService.Chat;
+        chatIndex = chats.Count - 1;
+    }
+
+    private void HandleCardsClick()
+    {
+        chatIndex = chatsCnt - 1;
+        gameOn = false;
+        PostMessage("/cards");
+    }
+
+    private void HandleHandClick()
+    {
+        chatIndex = chatsCnt - 1;
+        gameOn = false;
+        PostMessage("/hand");
+    }
+
+    private async Task PostMessage(string message)
+    {
+        ChatService.PostMessage(message);
+        gameOn = true;
+    }
+
+    private async void UpdatePage(object sender, PropertyChangedEventArgs e)
+    {
+        try
+        {
+            if (e.PropertyName == nameof(ChatService.Init))
+            {
+                SetVariables();
+                await InvokeAsync(StateHasChanged);
+            }
+            if (e.PropertyName == nameof(ChatService.PingId))
+            {
+                pingId = ChatService.PingId;
+                await InvokeAsync(StateHasChanged);
+            }
+            if (e.PropertyName == nameof(ChatService.Chat))
+            {
+                chats = ChatService.Chat;
+                await InvokeAsync(StateHasChanged);
+                if (chats.Count != chatsCnt)
+                {
+                    chatsCnt = chats.Count;
+                    if (gameOn)
+                    {
+                        output.Clear();
+                        for (var i = chatIndex + 1; i < chatsCnt; i++)
+                        {
+                            if (chats[i].Item3 == 2)
+                            {
+                                output.Add(chats[i].Item2);
+                            }
+                        }
+                    }
+                    
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Exception: {ex.Message}");
+        }
+    }
 }
+

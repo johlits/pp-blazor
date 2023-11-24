@@ -18,7 +18,7 @@ public sealed class DefaultScopedProcessingService : IScopedProcessingService
     public async Task DoWorkAsync(CancellationToken stoppingToken)
     {
         var pp = new pp.Program();
-        var chats = new List<Tuple<string, int>>();
+        var chats = new List<Tuple<string, string, int>>();
         pp.Init(chats);
 
         while (!stoppingToken.IsCancellationRequested)
