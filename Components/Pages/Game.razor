@@ -9,6 +9,7 @@
 @if (loggedIn)
 {
     <h2>Game</h2>
+    <p>@gameMessage</p>
     <button @onclick="HandleCardsClick" disabled="@(gameOn == false)">Cards</button>
     <button @onclick="HandleHandClick" disabled="@(gameOn == false)">Hand</button>
     @if (gameOn) {
@@ -32,6 +33,8 @@ else
     private int chatsCnt = 0;
     private bool loggedIn = false;
     private bool gameOn = false;
+    private int fetchingGame = 0;
+    private string gameMessage = "";
 
     protected override void OnInitialized()
     {
@@ -48,7 +51,18 @@ else
         chats = ChatService.Chat;
         chatsCnt = ChatService.Chat.Count();
         chatIndex = chats.Count - 1;
-        gameOn = ChatService.FirstFetch;
+        FetchGame();
+    }
+
+    private async void FetchGame()
+    {
+        if (fetchingGame == 0)
+        {
+            fetchingGame = 1;
+            chatIndex = chatsCnt - 1;
+            gameOn = false;
+            await PostMessage("/game");
+        }
     }
 
     private void HandleCardsClick()
@@ -83,14 +97,14 @@ else
             {
                 if (ChatService.FirstFetch)
                 {
-                    gameOn = true;
+                    FetchGame();
                 }
                 await InvokeAsync(StateHasChanged);
             }
             if (e.PropertyName == nameof(ChatService.Chat))
             {
                 chats = ChatService.Chat;
-                
+
                 if (chats.Count != chatsCnt)
                 {
                     chatsCnt = chats.Count;
@@ -101,7 +115,17 @@ else
                     {
                         if (chats[i].Item3 == 2)
                         {
-                            output.Add(chats[i].Item2);
+                            if (fetchingGame == 1)
+                            {
+                                gameMessage = chats[i].Item2;
+                                fetchingGame = 2;
+                                newOutput = true;
+                                break;
+                            }
+                            else
+                            {
+                                output.Add(chats[i].Item2);
+                            }
                             newOutput = true;
                         }
                     }
