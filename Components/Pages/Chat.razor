@@ -12,7 +12,7 @@
     <h2>Chat</h2>
     @foreach (var chat in chats)
     {
-        <span>@chat</span>
+        <span>@chat.Item1</span>
         <br />
     }
     <form method="post" @onsubmit="PostMessage" @formname="post-plain-form" style="margin-bottom: 5px;">
@@ -28,7 +28,7 @@ else
 
 @code {
     private int pingId = 0;
-    private List<string> chats = new List<string>();
+    private List<Tuple<string, int>> chats = new List<Tuple<string, int>>();
     private int chatsCnt = 0;
     private bool loggedIn = false;
 
