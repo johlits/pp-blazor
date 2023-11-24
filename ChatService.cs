@@ -9,7 +9,7 @@ public class ChatService
     private string eventTitle = null;
     private bool init;
     private List<Tuple<string, string, int>> chat = new List<Tuple<string, string, int>>();
-    private int pingId = 0;
+    private bool firstFetch = false;
     public Queue<string> messages = new Queue<string>();
 
     public event PropertyChangedEventHandler PropertyChanged;
@@ -64,12 +64,12 @@ public class ChatService
         }
     }
 
-    public int PingId
+    public bool FirstFetch
     {
-        get => pingId;
+        get => firstFetch;
         set
         {
-            pingId = value;
+            firstFetch = value;
             OnPropertyChanged();
         }
     }

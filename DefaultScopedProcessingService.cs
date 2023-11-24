@@ -19,7 +19,10 @@ public sealed class DefaultScopedProcessingService : IScopedProcessingService
     {
         var pp = new pp.Program();
         var chats = new List<Tuple<string, string, int>>();
+        var chatCount = 0;
+        
         pp.Init(chats);
+        _chatService.Chat = chats;
 
         while (!stoppingToken.IsCancellationRequested)
         {
@@ -28,6 +31,7 @@ public sealed class DefaultScopedProcessingService : IScopedProcessingService
                 pp.SetUserAlias(_chatService.UserName);
                 pp.SetEventTitle(_chatService.EventTitle);
                 Task t = pp.Start();
+                var firstFetch = false;
                 while (!t.IsCompleted)
                 {
                     if (!_chatService.Init)
@@ -39,13 +43,22 @@ public sealed class DefaultScopedProcessingService : IScopedProcessingService
                     {
                         pp.GetUI().SendMessage(_chatService.messages.Dequeue());
                     }
-                    _chatService.Chat = chats;
-                    _chatService.PingId++;
-                    await Task.Delay(1000, stoppingToken);
+                    if (!firstFetch && pp.FirstFetch())
+                    {
+                        firstFetch = true;
+                        _chatService.FirstFetch = true;
+                    }
+                    if (chatCount != pp.ChatCount())
+                    {
+                        chatCount = pp.ChatCount();
+                        _chatService.Chat = chats;
+                    }
+                    
+                    await Task.Delay(100, stoppingToken);
                 }
             }
             
-            await Task.Delay(1000);
+            await Task.Delay(100);
         }
     }
 }

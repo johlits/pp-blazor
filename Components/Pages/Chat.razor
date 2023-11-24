@@ -28,7 +28,6 @@ else
 }
 
 @code {
-    private int pingId = 0;
     private List<Tuple<string, string, int>> chats = new List<Tuple<string, string, int>>();
     private int chatsCnt = 0;
     private bool loggedIn = false;
@@ -40,7 +39,6 @@ else
         if (ChatService.UserName != null && ChatService.EventTitle != null)
         {
             loggedIn = ChatService.Init;
-            pingId = ChatService.PingId;
             chats = ChatService.Chat;
         }
         ChatService.PropertyChanged += UpdatePage;
@@ -114,11 +112,6 @@ else
             if (e.PropertyName == nameof(ChatService.Init))
             {
                 loggedIn = ChatService.Init;
-                await InvokeAsync(StateHasChanged);
-            }
-            if (e.PropertyName == nameof(ChatService.PingId))
-            {
-                pingId = ChatService.PingId;
                 await InvokeAsync(StateHasChanged);
             }
             if (e.PropertyName == nameof(ChatService.Chat))

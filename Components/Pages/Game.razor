@@ -9,8 +9,8 @@
 @if (loggedIn)
 {
     <h2>Game</h2>
-    <button @onclick="HandleCardsClick">Cards</button>
-    <button @onclick="HandleHandClick">Hand</button>
+    <button @onclick="HandleCardsClick" disabled="@(gameOn == false)">Cards</button>
+    <button @onclick="HandleHandClick" disabled="@(gameOn == false)">Hand</button>
     @if (gameOn) {
         <br />
         @foreach (var line in output)
@@ -26,7 +26,6 @@ else
 }
 
 @code {
-    private int pingId = 0;
     private List<Tuple<string, string, int>> chats = new List<Tuple<string, string, int>>();
     private List<string> output = new List<string>();
     private int chatIndex = 0;
@@ -46,9 +45,10 @@ else
     public void SetVariables()
     {
         loggedIn = ChatService.Init;
-        pingId = ChatService.PingId;
         chats = ChatService.Chat;
+        chatsCnt = ChatService.Chat.Count();
         chatIndex = chats.Count - 1;
+        gameOn = ChatService.FirstFetch;
     }
 
     private void HandleCardsClick()
@@ -68,7 +68,6 @@ else
     private async Task PostMessage(string message)
     {
         ChatService.PostMessage(message);
-        gameOn = true;
     }
 
     private async void UpdatePage(object sender, PropertyChangedEventArgs e)
@@ -80,31 +79,39 @@ else
                 SetVariables();
                 await InvokeAsync(StateHasChanged);
             }
-            if (e.PropertyName == nameof(ChatService.PingId))
+            if (e.PropertyName == nameof(ChatService.FirstFetch))
             {
-                pingId = ChatService.PingId;
+                if (ChatService.FirstFetch)
+                {
+                    gameOn = true;
+                }
                 await InvokeAsync(StateHasChanged);
             }
             if (e.PropertyName == nameof(ChatService.Chat))
             {
                 chats = ChatService.Chat;
-                await InvokeAsync(StateHasChanged);
+                
                 if (chats.Count != chatsCnt)
                 {
                     chatsCnt = chats.Count;
-                    if (gameOn)
+
+                    output.Clear();
+                    var newOutput = false;
+                    for (var i = chatIndex + 1; i < chatsCnt; i++)
                     {
-                        output.Clear();
-                        for (var i = chatIndex + 1; i < chatsCnt; i++)
+                        if (chats[i].Item3 == 2)
                         {
-                            if (chats[i].Item3 == 2)
-                            {
-                                output.Add(chats[i].Item2);
-                            }
+                            output.Add(chats[i].Item2);
+                            newOutput = true;
                         }
+                    }
+                    if (newOutput)
+                    {
+                        gameOn = true;
                     }
                     
                 }
+                await InvokeAsync(StateHasChanged);
             }
         }
         catch (Exception ex)
