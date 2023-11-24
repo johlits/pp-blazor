@@ -9,26 +9,27 @@
 
 @if (loggedIn)
 {
+    <h2>Chat</h2>
     @foreach (var chat in chats)
     {
         <span>@chat</span>
         <br />
     }
-    <form method="post" @onsubmit="PostMessage" @formname="post-plain-form">
+    <form method="post" @onsubmit="PostMessage" @formname="post-plain-form" style="margin-bottom: 5px;">
         <AntiforgeryToken />
-        Comment:
-        <InputText @bind-Value="PostModel!.Message" />
+        <InputText @ref=inputTextChat @bind-Value="PostModel!.Message" style="width: 400px;" @onkeydown="HandleKeyDownPost" />
         <button type="submit">Post</button>
     </form>
 }
 else
 {
-    <form method="post" @onsubmit="Submit" @formname="login-plain-form">
+    <h2>Login</h2>
+    <form method="post" @onsubmit="Submit" @formname="login-plain-form"style="margin-bottom: 5px;">
         <AntiforgeryToken />
-        User: 
-        <InputText @bind-Value="Model!.User" />
-        Event: 
-        <InputText @bind-Value="Model!.Event" />
+        User:
+        <InputText @ref=inputTextUser @bind-Value="Model!.User" @onkeydown="HandleKeyDownUser" />
+        Event:
+        <InputText @ref=inputTextEvent @bind-Value="Model!.Event" @onkeydown="HandleKeyDownEvent" />
         <button type="submit">Submit</button>
     </form>
 }
@@ -38,6 +39,10 @@ else
     private List<string> chats = new List<string>();
     private int chatsCnt = 0;
     private bool loggedIn = false;
+
+    private InputText inputTextUser;
+    private InputText inputTextChat;
+    private InputText inputTextEvent;
 
     protected override void OnInitialized()
     {
@@ -52,6 +57,24 @@ else
         PostModel ??= new();
     }
 
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            if (inputTextUser?.Element != null)
+            {
+                await inputTextUser.Element.Value.FocusAsync();
+            }
+        }
+        else
+        {
+            if (inputTextChat?.Element != null)
+            {
+                await inputTextChat.Element.Value.FocusAsync();
+            }
+        }
+    }
+
     [SupplyParameterFromForm]
     public Login? Model { get; set; }
 
@@ -60,15 +83,51 @@ else
 
     private void Submit()
     {
-        ChatService.UserName = Model?.User;
-        ChatService.EventTitle = Model?.Event;
-        loggedIn = true;
+        if (!string.IsNullOrEmpty(Model?.User) && !string.IsNullOrEmpty(Model?.Event))
+        {
+            ChatService.UserName = Model?.User;
+            ChatService.EventTitle = Model?.Event;
+            loggedIn = true;
+        }
     }
 
-    private void PostMessage()
+    private async Task PostMessage()
     {
-        ChatService.PostMessage(PostModel?.Message);
-        PostModel.Message = "";
+        if (PostModel?.Message != null)
+        {
+            ChatService.PostMessage(PostModel?.Message);
+            PostModel.Message = "";
+        }
+    }
+
+    private async Task HandleKeyDownUser(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter" && !e.CtrlKey && !e.AltKey && !e.ShiftKey)
+        {
+            await inputTextEvent.Element.Value.FocusAsync();
+        }
+    }
+
+    private async Task HandleKeyDownEvent(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter" && !e.CtrlKey && !e.AltKey && !e.ShiftKey)
+        {
+            if (!string.IsNullOrEmpty(Model?.User))
+            {
+                Submit();
+            }
+        }
+    }
+
+    private async Task HandleKeyDownPost(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter" && !e.CtrlKey && !e.AltKey && !e.ShiftKey)
+        {
+            if (loggedIn)
+            {
+                PostMessage();
+            }
+        }
     }
 
     public class Login 
