@@ -1,0 +1,60 @@
+﻿@rendermode InteractiveServer
+@using System.ComponentModel
+@using pp_blazor.ScopedService
+@inject ChatService ChatService
+
+@if (loggedIn)
+{
+    <span>Welcome to <span>@eventName</span>, <span>@userName</span>! <a href="#" @onclick="OnLogout">Logout</a></span>
+}
+
+@code {
+    private bool loggedIn;
+    private string userName;
+    private string eventName;
+
+    protected override void OnInitialized()
+    {
+        if (ChatService.UserName != null && ChatService.EventTitle != null)
+        {
+            loggedIn = ChatService.Init;
+            userName = ChatService.UserName;
+            eventName = ChatService.EventTitle;
+        }
+        ChatService.PropertyChanged += UpdatePage;
+    }
+
+    private async void UpdatePage(object sender, PropertyChangedEventArgs e)
+    {
+        try
+        {
+            if (e.PropertyName == nameof(ChatService.Init))
+            {
+                loggedIn = ChatService.Init;
+                await InvokeAsync(StateHasChanged);
+            }
+            if (e.PropertyName == nameof(ChatService.UserName))
+            {
+                userName = ChatService.UserName;
+                await InvokeAsync(StateHasChanged);
+            }
+            if (e.PropertyName == nameof(ChatService.EventTitle))
+            {
+                eventName = ChatService.EventTitle;
+                await InvokeAsync(StateHasChanged);
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Exception: {ex.Message}");
+        }
+    }
+
+    private void OnLogout()
+    {
+        ChatService.UserName = null;
+        ChatService.EventTitle = null;
+        ChatService.Init = false;
+    }
+}
+

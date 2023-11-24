@@ -23,13 +23,18 @@ public sealed class DefaultScopedProcessingService : IScopedProcessingService
 
         while (!stoppingToken.IsCancellationRequested)
         {
-            if (_chatService.UserName != null && _chatService.EventTitle != null)
+            if (_chatService.Init)
             {
                 pp.SetUserAlias(_chatService.UserName);
                 pp.SetEventTitle(_chatService.EventTitle);
                 Task t = pp.Start();
                 while (!t.IsCompleted)
                 {
+                    if (!_chatService.Init)
+                    {
+                        chats.Clear();
+                        break;
+                    }
                     while (_chatService.messages.Count > 0)
                     {
                         pp.GetUI().SendMessage(_chatService.messages.Dequeue());
