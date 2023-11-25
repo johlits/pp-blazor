@@ -233,6 +233,12 @@ else
                     var first = true;
                     for (var i = chatIndex + 1; i < chatsCnt; i++)
                     {
+                        if (chats[i].Item2 == "Game started!" || chats[i].Item2.StartsWith("Battle report:"))
+                        {
+                            gameMessage = chats[i].Item2;
+                            gameOn = true;
+                            break;
+                        }
                         if (pickingCard == 1 && chats[i].Item3  == 0 && chats[i].Item1 == ChatService.UserName)
                         {
                             pickMessage = chats[i].Item2;
