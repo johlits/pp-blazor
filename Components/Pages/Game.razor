@@ -9,15 +9,72 @@
 @if (loggedIn)
 {
     <h2>Game</h2>
-    <p>@gameMessage</p>
+    <span>@gameMessage</span><br/>
     <button @onclick="HandleCardsClick" disabled="@(gameOn == false)">Cards</button>
     <button @onclick="HandleHandClick" disabled="@(gameOn == false)">Hand</button>
     @if (gameOn) {
         <br />
-        @foreach (var line in output)
+        @if (pickingCard == 1)
         {
-            <span>@line</span>
+            <span>@pickMessage</span>
+        }
+        @if (fetchingHand == 1)
+        {
+            <h3>Hand</h3>
+            <span>Coins: </span>
+
+            <span>@coins</span>
             <br />
+            <table>
+                <tr>
+                    <th>Name</th>
+                    <th>Atk</th>
+                    <th>Hp</th>
+                    <th>Traits</th>
+                </tr>
+                @foreach (var card in hand)
+                {
+                    <tr>
+                        <td>@card.Name</td>
+                        <td>@card.Atk</td>
+                        <td>@card.Hp</td>
+                        <td>@card.Traits</td>
+                    </tr>
+                }
+            </table>
+        }
+
+        @if (fetchingCards == 1)
+        {
+            <h3>Cards</h3>
+            <table>
+                <tr>
+                    <th>Name</th>
+                    <th>Atk</th>
+                    <th>Hp</th>
+                    <th>Cost</th>
+                    <th>Traits</th>
+                    <th>Pick</th>
+                </tr>
+                @foreach (var card in cards)
+                {
+                    <tr>
+                        <td>@card.Name</td>
+                        <td>@card.Atk</td>
+                        <td>@card.Hp</td>
+                        <td>@card.Cost</td>
+                        <td>@card.Traits</td>
+                        @if (card.Name == null)
+                        {
+                            <td></td>
+                        }
+                        else
+                        {
+                            <td><button @onclick="() => PickCard(card.Name)">Pick</button></td>
+                        }
+                    </tr>
+                }
+            </table>
         }
     }
 }
@@ -34,7 +91,23 @@ else
     private bool loggedIn = false;
     private bool gameOn = false;
     private int fetchingGame = 0;
+    private int fetchingCards = 0;
+    private int fetchingHand = 0;
+    private int pickingCard = 0;
+    private string coins = "-";
     private string gameMessage = "";
+    private string pickMessage = "";
+    private List<Card> cards = new List<Card>();
+    private List<Card> hand = new List<Card>();
+
+    private class Card
+    {
+        public string? Name { get; set; }
+        public string? Atk { get; set; }
+        public string? Hp { get; set; }
+        public string? Cost { get; set; }
+        public string? Traits { get; set; }
+    }
 
     protected override void OnInitialized()
     {
@@ -45,38 +118,74 @@ else
         ChatService.PropertyChanged += UpdatePage;
     }
 
+    public void PickCard(string name)
+    {
+        if (pickingCard == 0)
+        {
+            fetchingCards = 0;
+            fetchingHand = 0;
+            fetchingGame = 0;
+            pickingCard = 1;
+            chatIndex = chatsCnt;
+            gameOn = false;
+            PostMessage("/pick " + name);
+        }
+    }
+
     public void SetVariables()
     {
         loggedIn = ChatService.Init;
-        chats = ChatService.Chat;
-        chatsCnt = ChatService.Chat.Count();
-        chatIndex = chats.Count - 1;
-        FetchGame();
+        if (fetchingGame == 0)
+        {
+            fetchingCards = 0;
+            fetchingHand = 0;
+            fetchingGame = 1;
+            pickingCard = 0;
+            chatIndex = chatsCnt - 1;
+            gameOn = false;
+            PostMessage("/game");
+        }
     }
 
-    private async void FetchGame()
+    private void FetchGame()
     {
         if (fetchingGame == 0)
         {
+            fetchingCards = 0;
+            fetchingHand = 0;
             fetchingGame = 1;
+            pickingCard = 0;
             chatIndex = chatsCnt - 1;
             gameOn = false;
-            await PostMessage("/game");
+            PostMessage("/game");
         }
     }
 
     private void HandleCardsClick()
     {
-        chatIndex = chatsCnt - 1;
-        gameOn = false;
-        PostMessage("/cards");
+        if (fetchingCards == 0) {
+            fetchingCards = 1;
+            fetchingHand = 0;
+            fetchingGame = 0;
+            pickingCard = 0;
+            chatIndex = chatsCnt - 1;
+            gameOn = false;
+            PostMessage("/cards");
+        }
     }
 
     private void HandleHandClick()
     {
-        chatIndex = chatsCnt - 1;
-        gameOn = false;
-        PostMessage("/hand");
+        if (fetchingHand == 0)
+        {
+            fetchingCards = 0;
+            fetchingHand = 1;
+            fetchingGame = 0;
+            pickingCard = 0;
+            chatIndex = chatsCnt - 1;
+            gameOn = false;
+            PostMessage("/hand");
+        }
     }
 
     private async Task PostMessage(string message)
@@ -111,11 +220,93 @@ else
 
                     output.Clear();
                     var newOutput = false;
+
+                    if (fetchingCards == 1)
+                    {
+                        cards.Clear();
+                    }
+                    if (fetchingHand == 1)
+                    {
+                        hand.Clear();
+                    }
+
+                    var first = true;
                     for (var i = chatIndex + 1; i < chatsCnt; i++)
                     {
-                        if (chats[i].Item3 == 2)
+                        if (pickingCard == 1 && chats[i].Item3  == 0 && chats[i].Item1 == ChatService.UserName)
                         {
-                            if (fetchingGame == 1)
+                            pickMessage = chats[i].Item2;
+                            gameOn = true;
+                        }
+                        else if (chats[i].Item3 == 2)
+                        {
+                            if (fetchingCards == 1)
+                            {
+                                // Troll Warlord ATK 2 HP 1 COST 2 Traits Stealth
+                                var s = chats[i].Item2;
+                                var p1 = s.Split(" ATK ");
+                                var name = p1[0];
+                                var p2 = s.Split(" ");
+                                var prev = "";
+                                var atk = "";
+                                var hp = "";
+                                var cost = "";
+                                var traits = "";
+                                foreach (var word in p2)
+                                {
+                                    if (prev == "ATK") atk = word;
+                                    if (prev == "HP") hp = word;
+                                    if (prev == "COST") cost = word;
+                                    if (prev == "Traits") traits = word;
+                                    prev = word;
+                                }
+                                cards.Add(new Card
+                                    {
+                                        Name = name,
+                                        Atk = atk,
+                                        Hp = hp,
+                                        Cost = cost,
+                                        Traits = traits
+                                    });
+                            }
+                            else if (fetchingHand == 1)
+                            {
+                                if (first)
+                                {
+                                    first = false;
+                                    coins = chats[i].Item2.Split(" ")[1];
+                                }
+                                else
+                                {
+                                    // Troll Warlord ATK 2 HP 1 COST 2 Traits Stealth
+                                    var s = chats[i].Item2;
+                                    var p1 = s.Split(" ATK ");
+                                    var name = p1[0];
+                                    var p2 = s.Split(" ");
+                                    var prev = "";
+                                    var atk = "";
+                                    var hp = "";
+                                    var cost = "";
+                                    var traits = "";
+                                    foreach (var word in p2)
+                                    {
+                                        if (prev == "ATK") atk = word;
+                                        if (prev == "HP") hp = word;
+                                        if (prev == "COST") cost = word;
+                                        if (prev == "Traits") traits = word;
+                                        prev = word;
+                                    }
+                                    hand.Add(new Card
+                                        {
+                                            Name = name,
+                                            Atk = atk,
+                                            Hp = hp,
+                                            Cost = cost,
+                                            Traits = traits
+                                        });
+                                }
+                            }
+                            else if (fetchingGame == 1)
                             {
                                 gameMessage = chats[i].Item2;
                                 fetchingGame = 2;
@@ -129,11 +320,11 @@ else
                             newOutput = true;
                         }
                     }
+
                     if (newOutput)
                     {
                         gameOn = true;
                     }
-                    
                 }
                 await InvokeAsync(StateHasChanged);
             }
